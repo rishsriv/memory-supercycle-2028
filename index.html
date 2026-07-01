@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Memory Super-Cycle — NAND · DRAM · HBM Price Trajectory to 2028</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{
+  --bg:#080b14; --bg2:#0d1220; --panel:#111827; --panel2:#0f1626;
+  --line:#1d2841; --line2:#26324f;
+  --txt:#e8edf9; --mut:#8a97b6; --mut2:#5f6c8c;
+  --dram:#f4b53f; --nand:#33c9d6; --hbm:#b678f0; --total:#7c89ab;
+  --up:#43e08a; --down:#ff5f7e; --nvda:#77b900;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:
+   radial-gradient(1200px 700px at 15% -10%, #14203a 0%, rgba(20,32,58,0) 55%),
+   radial-gradient(1000px 600px at 100% 0%, #1a1330 0%, rgba(26,19,48,0) 50%),
+   var(--bg);
+   color:var(--txt);
+   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+   -webkit-font-smoothing:antialiased;}
+.wrap{max-width:1320px;margin:0 auto;padding:34px 30px 60px;}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
+/* header */
+.kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--mut);font-weight:600;}
+h1{font-size:40px;line-height:1.06;margin:12px 0 6px;font-weight:750;letter-spacing:-.02em;}
+h1 .grad{background:linear-gradient(92deg,var(--dram),var(--hbm) 70%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{color:var(--mut);font-size:15.5px;max-width:900px;line-height:1.5;}
+.asof{color:var(--mut2);font-size:12.5px;margin-top:10px}
+.asof b{color:var(--mut)}
+/* verdict */
+.verdict{margin:24px 0 26px;padding:18px 22px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(244,181,63,.08),rgba(182,120,240,.06));
+  border:1px solid var(--line2);border-left:3px solid var(--dram);}
+.verdict b{color:var(--txt)} .verdict{color:#c9d3ea;font-size:15px;line-height:1.55}
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.kpi.dram::before{background:var(--dram)} .kpi.nand::before{background:var(--nand)}
+.kpi.hbm::before{background:var(--hbm)} .kpi.mu::before{background:var(--up)}
+.kpi .lbl{font-size:12px;letter-spacing:.06em;color:var(--mut);text-transform:uppercase;font-weight:600}
+.kpi .big{font-size:30px;font-weight:750;margin:8px 0 2px;letter-spacing:-.01em}
+.kpi .unit{font-size:13px;color:var(--mut2);font-weight:500}
+.kpi .row{display:flex;gap:14px;margin-top:9px;font-size:12.5px;color:var(--mut)}
+.kpi .up{color:var(--up);font-weight:650} .kpi .dn{color:var(--down);font-weight:650}
+/* grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px 12px}
+.card.span2{grid-column:1 / -1}
+.card h3{margin:0 0 2px;font-size:17.5px;font-weight:700;letter-spacing:-.01em}
+.card .cap{color:var(--mut);font-size:12.7px;margin:0 0 10px;line-height:1.45}
+.chart{width:100%}
+.mini3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mini3 .mt{font-size:13px;font-weight:700;text-align:center;margin-bottom:-6px;padding-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:2px 0 6px;font-size:12px;color:var(--mut)}
+.legend .k{display:inline-flex;align-items:center;gap:6px}
+.legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+/* outlook */
+.outlook{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.oc{border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:var(--panel2)}
+.oc .tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:20px;display:inline-block}
+.oc.dram .tag{color:var(--dram);background:rgba(244,181,63,.12)}
+.oc.nand .tag{color:var(--nand);background:rgba(51,201,214,.12)}
+.oc.hbm .tag{color:var(--hbm);background:rgba(182,120,240,.12)}
+.oc h4{margin:10px 0 6px;font-size:14.5px}
+.oc p{margin:0 0 8px;font-size:12.8px;color:#bcc7e0;line-height:1.5}
+.oc .verdict-tag{font-size:12px;font-weight:650}
+.pill{font-size:10.5px;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.05);color:var(--mut);margin-right:5px}
+/* footer */
+.foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut2);font-size:11.6px;line-height:1.6}
+.foot b{color:var(--mut)}
+.srcbar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.src{font-size:11px;color:var(--mut);background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:4px 11px}
+.note{color:var(--mut2);font-style:italic}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.mini3,.outlook{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">FactIQ · Memory Market Intelligence</div>
+  <h1>The memory super-cycle: <span class="grad">NAND, DRAM &amp; HBM</span> to 2028</h1>
+  <div class="sub">An AI-driven shortage has pushed memory prices to record highs. This dashboard tracks the real-world price signal from Korea customs export data, corroborates it with US import-price indices and memory-maker financials, and maps three trajectories through 2028.</div>
+  <div class="asof">Data as of <b id="asof"></b> · Built 2026-07-01 · Price proxy = Korea export unit value (US$/kg), the timeliest public read on the Samsung/SK&nbsp;Hynix duopoly</div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card span2">
+      <h3>The price signal: memory unit values are up 8–10× off their 2022–23 trough</h3>
+      <p class="cap">Korea customs export unit value (US$ per kg), monthly, log scale. Captures the 2022–23 crash, a shallow 2024 recovery, and the violent AI-driven surge from late 2025. HBM/multichip modules command the highest absolute price; NAND bottomed latest (Feb-2025) and is now catching up.</p>
+      <div class="legend" id="leg1"></div>
+      <div id="c_hist" class="chart" style="height:340px"></div>
+    </div>
+
+    <div class="card span2">
+      <h3>Trajectory to 2028: elevated through 2027, then the cycle turns on 2028 supply</h3>
+      <p class="cap">Illustrative price-level scenarios indexed to May-2026 = 100 (shaded band = bear→bull range, bold line = base case). Anchored to company guidance: shortages widen into 2027 (Samsung/SK&nbsp;Hynix "sold out"), with new fab capacity from late-2027/2028 setting up either a soft landing (base), sustained tightness (bull), or an oversupply correction (bear). <span class="note">Scenarios are an analyst synthesis, not FactIQ data.</span></p>
+      <div class="mini3">
+        <div><div class="mt" style="color:var(--dram)">DRAM</div><div id="c_dram" class="chart" style="height:230px"></div></div>
+        <div><div class="mt" style="color:var(--nand)">NAND</div><div id="c_nand" class="chart" style="height:230px"></div></div>
+        <div><div class="mt" style="color:var(--hbm)">HBM</div><div id="c_hbm" class="chart" style="height:230px"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>The demand engine: AI compute is pulling memory tight</h3>
+      <p class="cap">Nvidia quarterly revenue (the HBM/AI-datacenter demand pull) vs Micron — the memory pure-play whose gross margin swung from −0.7% to 84.6% as pricing power returned.</p>
+      <div class="legend" id="leg3"></div>
+      <div id="c_dem" class="chart" style="height:300px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Official confirmation: US import prices spike while domestic PPI stays flat</h3>
+      <p class="cap">BLS import-price index for semiconductors from Asian NICs (Korea/Taiwan — the memory-producing region) vs the flat domestic producer-price index. The +41% YoY import spike is the official fingerprint of the memory shock.</p>
+      <div class="legend" id="leg4"></div>
+      <div id="c_bls" class="chart" style="height:300px"></div>
+    </div>
+
+    <div class="card span2">
+      <h3>Revenue barometer: Korea's memory exports are running at a ~$225B/yr pace</h3>
+      <p class="cap">Monthly Korea memory export value (US$, HS&nbsp;854232). A near-10× swing from the 2023 trough of ~$2.5B/mo to ~$25B in May-2026 — price and volume compounding. China (+173% YoY) and Taiwan (+92% YoY) memory imports corroborate the same inflection.</p>
+      <div id="c_rev" class="chart" style="height:250px"></div>
+    </div>
+
+    <div class="card span2">
+      <h3>Segment outlook — where each memory type is headed</h3>
+      <p class="cap">Base-case read on direction into 2027–2028, with the key swing factor for each.</p>
+      <div class="outlook" id="outlook"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="srcbar" id="srcbar"></div>
+    <b>How this was built.</b> Four parallel research agents queried FactIQ: (1) Korea Customs Service export data by HS code — DRAM (8542321010), NAND/flash (8542321030) and multichip/HBM modules (85423240xx) — to compute export unit value (US$/kg) as a price proxy; (2) BLS import-price &amp; PPI indices for semiconductors; (3) Micron &amp; Nvidia SEC-filed quarterly financials plus China/Taiwan customs; (4) forward company guidance from earnings coverage.
+    <br><br>
+    <b>Caveats.</b> Unit value (value÷weight) is a directional price proxy, not a contract price — it embeds product-mix shifts, so absolute US$/kg levels overstate like-for-like chip price moves; treat the <i>shape</i> and <i>magnitude of change</i> as the signal. BLS publishes no standalone DRAM/NAND index, so the Asian-NIC import series is the closest official proxy. The 2028 scenarios are an analyst synthesis anchored to company guidance (tightness confirmed only "through 2027"); no memory maker has issued 2028 pricing guidance. Latest FactIQ data: May 2026.
+    <br><br>
+    <b>Sources:</b> Korea Customs Service (KCS) · US BLS (import price indices, PPI) · SEC EDGAR / market data (MU, NVDA) · China GACC · Taiwan MOEA · company earnings coverage. Assembled via FactIQ.
+  </div>
+</div>
+
+<script id="factiq-data" type="application/json">{"d": {"meta": {"as_of": "2026-05 (latest FactIQ data)", "built": "2026-07-01"}, "korea_uv": {"DRAM": [{"date": "2020-01", "uv": 15463.9}, {"date": "2020-02", "uv": 17219.1}, {"date": "2020-03", "uv": 17339.9}, {"date": "2020-04", "uv": 19492.1}, {"date": "2020-05", "uv": 16837.6}, {"date": "2020-06", "uv": 13702.3}, {"date": "2020-07", "uv": 12982.9}, {"date": "2020-08", "uv": 11555.0}, {"date": "2020-09", "uv": 10175.2}, {"date": "2020-10", "uv": 10203.8}, {"date": "2020-11", "uv": 8450.8}, {"date": "2020-12", "uv": 11816.3}, {"date": "2021-01", "uv": 13295.2}, {"date": "2021-02", "uv": 9886.8}, {"date": "2021-03", "uv": 10489.4}, {"date": "2021-04", "uv": 11986.6}, {"date": "2021-05", "uv": 12081.0}, {"date": "2021-06", "uv": 17145.0}, {"date": "2021-07", "uv": 18183.7}, {"date": "2021-08", "uv": 17917.2}, {"date": "2021-09", "uv": 19242.4}, {"date": "2021-10", "uv": 17223.8}, {"date": "2021-11", "uv": 19430.6}, {"date": "2021-12", "uv": 17504.2}, {"date": "2022-01", "uv": 15338.7}, {"date": "2022-02", "uv": 15887.6}, {"date": "2022-03", "uv": 15187.2}, {"date": "2022-04", "uv": 16152.8}, {"date": "2022-05", "uv": 21393.9}, {"date": "2022-06", "uv": 16954.1}, {"date": "2022-07", "uv": 12524.2}, {"date": "2022-08", "uv": 15154.8}, {"date": "2022-09", "uv": 13845.5}, {"date": "2022-10", "uv": 8934.4}, {"date": "2022-11", "uv": 8595.0}, {"date": "2022-12", "uv": 7376.2}, {"date": "2023-01", "uv": 7561.6}, {"date": "2023-02", "uv": 8347.0}, {"date": "2023-03", "uv": 8549.9}, {"date": "2023-04", "uv": 7959.6}, {"date": "2023-05", "uv": 7567.7}, {"date": "2023-06", "uv": 7708.9}, {"date": "2023-07", "uv": 10863.7}, {"date": "2023-08", "uv": 9972.1}, {"date": "2023-09", "uv": 8914.2}, {"date": "2023-10", "uv": 10150.4}, {"date": "2023-11", "uv": 10382.6}, {"date": "2023-12", "uv": 9082.7}, {"date": "2024-01", "uv": 10919.7}, {"date": "2024-02", "uv": 12842.5}, {"date": "2024-03", "uv": 14434.4}, {"date": "2024-04", "uv": 14997.9}, {"date": "2024-05", "uv": 15458.5}, {"date": "2024-06", "uv": 16239.0}, {"date": "2024-07", "uv": 18838.3}, {"date": "2024-08", "uv": 18782.1}, {"date": "2024-09", "uv": 15556.2}, {"date": "2024-10", "uv": 20008.9}, {"date": "2024-11", "uv": 17066.0}, {"date": "2024-12", "uv": 15464.0}, {"date": "2025-01", "uv": 14690.1}, {"date": "2025-02", "uv": 13397.2}, {"date": "2025-03", "uv": 14202.7}, {"date": "2025-04", "uv": 15695.2}, {"date": "2025-05", "uv": 14020.8}, {"date": "2025-06", "uv": 12160.0}, {"date": "2025-07", "uv": 14894.1}, {"date": "2025-08", "uv": 17676.0}, {"date": "2025-09", "uv": 16595.2}, {"date": "2025-10", "uv": 20706.6}, {"date": "2025-11", "uv": 24266.5}, {"date": "2025-12", "uv": 23724.7}, {"date": "2026-01", "uv": 35525.8}, {"date": "2026-02", "uv": 48169.4}, {"date": "2026-03", "uv": 55149.4}, {"date": "2026-04", "uv": 66478.2}, {"date": "2026-05", "uv": 77557.0}], "NAND": [{"date": "2020-01", "uv": 10726.3}, {"date": "2020-02", "uv": 9476.2}, {"date": "2020-03", "uv": 9967.9}, {"date": "2020-04", "uv": 10890.3}, {"date": "2020-05", "uv": 11733.0}, {"date": "2020-06", "uv": 10349.5}, {"date": "2020-07", "uv": 11825.3}, {"date": "2020-08", "uv": 11547.5}, {"date": "2020-09", "uv": 10934.8}, {"date": "2020-10", "uv": 10782.4}, {"date": "2020-11", "uv": 9105.1}, {"date": "2020-12", "uv": 10453.5}, {"date": "2021-01", "uv": 9613.6}, {"date": "2021-02", "uv": 9877.0}, {"date": "2021-03", "uv": 8330.3}, {"date": "2021-04", "uv": 10081.7}, {"date": "2021-05", "uv": 10943.1}, {"date": "2021-06", "uv": 11218.1}, {"date": "2021-07", "uv": 10574.7}, {"date": "2021-08", "uv": 10757.9}, {"date": "2021-09", "uv": 11219.8}, {"date": "2021-10", "uv": 13091.8}, {"date": "2021-11", "uv": 12089.0}, {"date": "2021-12", "uv": 11086.1}, {"date": "2022-01", "uv": 10911.8}, {"date": "2022-02", "uv": 13784.6}, {"date": "2022-03", "uv": 14076.9}, {"date": "2022-04", "uv": 13885.1}, {"date": "2022-05", "uv": 13605.5}, {"date": "2022-06", "uv": 16589.6}, {"date": "2022-07", "uv": 18336.3}, {"date": "2022-08", "uv": 15769.1}, {"date": "2022-09", "uv": 11345.8}, {"date": "2022-10", "uv": 8066.6}, {"date": "2022-11", "uv": 10803.6}, {"date": "2022-12", "uv": 8633.1}, {"date": "2023-01", "uv": 13356.8}, {"date": "2023-02", "uv": 10150.6}, {"date": "2023-03", "uv": 6987.2}, {"date": "2023-04", "uv": 9581.8}, {"date": "2023-05", "uv": 9576.1}, {"date": "2023-06", "uv": 6414.3}, {"date": "2023-07", "uv": 8282.2}, {"date": "2023-08", "uv": 9514.0}, {"date": "2023-09", "uv": 8637.8}, {"date": "2023-10", "uv": 10309.5}, {"date": "2023-11", "uv": 10992.4}, {"date": "2023-12", "uv": 9093.2}, {"date": "2024-01", "uv": 13527.0}, {"date": "2024-02", "uv": 15856.5}, {"date": "2024-03", "uv": 14855.5}, {"date": "2024-04", "uv": 14449.0}, {"date": "2024-05", "uv": 16364.7}, {"date": "2024-06", "uv": 14906.0}, {"date": "2024-07", "uv": 13980.0}, {"date": "2024-08", "uv": 12798.1}, {"date": "2024-09", "uv": 15421.9}, {"date": "2024-10", "uv": 13510.4}, {"date": "2024-11", "uv": 10441.3}, {"date": "2024-12", "uv": 14531.2}, {"date": "2025-01", "uv": 10880.3}, {"date": "2025-02", "uv": 6287.1}, {"date": "2025-03", "uv": 8037.3}, {"date": "2025-04", "uv": 13044.7}, {"date": "2025-05", "uv": 13310.4}, {"date": "2025-06", "uv": 11270.4}, {"date": "2025-07", "uv": 11920.7}, {"date": "2025-08", "uv": 14697.7}, {"date": "2025-09", "uv": 12997.6}, {"date": "2025-10", "uv": 17750.2}, {"date": "2025-11", "uv": 26983.5}, {"date": "2025-12", "uv": 28352.9}, {"date": "2026-01", "uv": 32929.2}, {"date": "2026-02", "uv": 37503.3}, {"date": "2026-03", "uv": 45866.8}, {"date": "2026-04", "uv": 45956.5}, {"date": "2026-05", "uv": 56748.1}], "HBM": [{"date": "2020-01", "uv": 57832.2}, {"date": "2020-02", "uv": 59289.1}, {"date": "2020-03", "uv": 51765.3}, {"date": "2020-04", "uv": 40868.8}, {"date": "2020-05", "uv": 54566.6}, {"date": "2020-06", "uv": 44623.5}, {"date": "2020-07", "uv": 37342.4}, {"date": "2020-08", "uv": 47607.5}, {"date": "2020-09", "uv": 39787.9}, {"date": "2020-10", "uv": 42040.5}, {"date": "2020-11", "uv": 39886.0}, {"date": "2020-12", "uv": 34734.4}, {"date": "2021-01", "uv": 34857.9}, {"date": "2021-02", "uv": 34327.8}, {"date": "2021-03", "uv": 38406.9}, {"date": "2021-04", "uv": 37229.3}, {"date": "2021-05", "uv": 42893.1}, {"date": "2021-06", "uv": 41734.8}, {"date": "2021-07", "uv": 54424.4}, {"date": "2021-08", "uv": 54486.7}, {"date": "2021-09", "uv": 56136.8}, {"date": "2021-10", "uv": 52110.9}, {"date": "2021-11", "uv": 38247.9}, {"date": "2021-12", "uv": 39214.1}, {"date": "2022-01", "uv": 42209.2}, {"date": "2022-02", "uv": 46251.4}, {"date": "2022-03", "uv": 49220.5}, {"date": "2022-04", "uv": 41750.3}, {"date": "2022-05", "uv": 35482.7}, {"date": "2022-06", "uv": 30305.2}, {"date": "2022-07", "uv": 26439.3}, {"date": "2022-08", "uv": 25313.9}, {"date": "2022-09", "uv": 27979.9}, {"date": "2022-10", "uv": 18344.1}, {"date": "2022-11", "uv": 20478.9}, {"date": "2022-12", "uv": 22438.4}, {"date": "2023-01", "uv": 23530.6}, {"date": "2023-02", "uv": 19492.3}, {"date": "2023-03", "uv": 21373.8}, {"date": "2023-04", "uv": 10351.8}, {"date": "2023-05", "uv": 17855.9}, {"date": "2023-06", "uv": 26120.6}, {"date": "2023-07", "uv": 20347.3}, {"date": "2023-08", "uv": 19480.3}, {"date": "2023-09", "uv": 22671.4}, {"date": "2023-10", "uv": 33996.3}, {"date": "2023-11", "uv": 35385.7}, {"date": "2023-12", "uv": 45708.6}, {"date": "2024-01", "uv": 36387.0}, {"date": "2024-02", "uv": 49876.3}, {"date": "2024-03", "uv": 57845.7}, {"date": "2024-04", "uv": 54547.8}, {"date": "2024-05", "uv": 54463.9}, {"date": "2024-06", "uv": 43403.0}, {"date": "2024-07", "uv": 36593.8}, {"date": "2024-08", "uv": 40527.3}, {"date": "2024-09", "uv": 53718.8}, {"date": "2024-10", "uv": 35352.2}, {"date": "2024-11", "uv": 47677.1}, {"date": "2024-12", "uv": 39640.1}, {"date": "2025-01", "uv": 41741.5}, {"date": "2025-02", "uv": 43365.3}, {"date": "2025-03", "uv": 36908.3}, {"date": "2025-04", "uv": 31417.5}, {"date": "2025-05", "uv": 36184.3}, {"date": "2025-06", "uv": 40948.7}, {"date": "2025-07", "uv": 40504.0}, {"date": "2025-08", "uv": 45042.4}, {"date": "2025-09", "uv": 46039.6}, {"date": "2025-10", "uv": 49175.3}, {"date": "2025-11", "uv": 59407.5}, {"date": "2025-12", "uv": 54007.3}, {"date": "2026-01", "uv": 49376.2}, {"date": "2026-02", "uv": 87463.6}, {"date": "2026-03", "uv": 64685.3}, {"date": "2026-04", "uv": 114074.2}, {"date": "2026-05", "uv": 107493.4}], "TOTAL": [{"date": "2020-01", "uv": 18694.0}, {"date": "2020-02", "uv": 19959.3}, {"date": "2020-03", "uv": 22680.0}, {"date": "2020-04", "uv": 21404.0}, {"date": "2020-05", "uv": 22961.8}, {"date": "2020-06", "uv": 18551.6}, {"date": "2020-07", "uv": 17010.1}, {"date": "2020-08", "uv": 16637.1}, {"date": "2020-09", "uv": 16149.1}, {"date": "2020-10", "uv": 15940.4}, {"date": "2020-11", "uv": 13854.7}, {"date": "2020-12", "uv": 17764.9}, {"date": "2021-01", "uv": 18329.1}, {"date": "2021-02", "uv": 15848.9}, {"date": "2021-03", "uv": 16322.0}, {"date": "2021-04", "uv": 16854.9}, {"date": "2021-05", "uv": 17808.2}, {"date": "2021-06", "uv": 21793.1}, {"date": "2021-07", "uv": 21635.2}, {"date": "2021-08", "uv": 21364.0}, {"date": "2021-09", "uv": 22741.4}, {"date": "2021-10", "uv": 20367.2}, {"date": "2021-11", "uv": 21871.0}, {"date": "2021-12", "uv": 20604.6}, {"date": "2022-01", "uv": 19383.6}, {"date": "2022-02", "uv": 19700.8}, {"date": "2022-03", "uv": 20091.6}, {"date": "2022-04", "uv": 19396.8}, {"date": "2022-05", "uv": 21749.5}, {"date": "2022-06", "uv": 19397.6}, {"date": "2022-07", "uv": 16257.4}, {"date": "2022-08", "uv": 18565.7}, {"date": "2022-09", "uv": 16573.2}, {"date": "2022-10", "uv": 11979.2}, {"date": "2022-11", "uv": 11660.0}, {"date": "2022-12", "uv": 10428.3}, {"date": "2023-01", "uv": 11711.3}, {"date": "2023-02", "uv": 10767.0}, {"date": "2023-03", "uv": 10438.0}, {"date": "2023-04", "uv": 9486.7}, {"date": "2023-05", "uv": 10068.0}, {"date": "2023-06", "uv": 10520.9}, {"date": "2023-07", "uv": 11432.3}, {"date": "2023-08", "uv": 11835.3}, {"date": "2023-09", "uv": 11634.7}, {"date": "2023-10", "uv": 13524.2}, {"date": "2023-11", "uv": 14040.1}, {"date": "2023-12", "uv": 14326.6}, {"date": "2024-01", "uv": 16413.0}, {"date": "2024-02", "uv": 19142.6}, {"date": "2024-03", "uv": 21133.6}, {"date": "2024-04", "uv": 19313.7}, {"date": "2024-05", "uv": 22109.8}, {"date": "2024-06", "uv": 21732.6}, {"date": "2024-07", "uv": 22934.5}, {"date": "2024-08", "uv": 24076.6}, {"date": "2024-09", "uv": 23805.6}, {"date": "2024-10", "uv": 29274.1}, {"date": "2024-11", "uv": 24990.8}, {"date": "2024-12", "uv": 26051.3}, {"date": "2025-01", "uv": 20790.6}, {"date": "2025-02", "uv": 18627.4}, {"date": "2025-03", "uv": 20065.3}, {"date": "2025-04", "uv": 20370.7}, {"date": "2025-05", "uv": 21494.1}, {"date": "2025-06", "uv": 21754.6}, {"date": "2025-07", "uv": 22804.4}, {"date": "2025-08", "uv": 26164.9}, {"date": "2025-09", "uv": 25282.6}, {"date": "2025-10", "uv": 28636.6}, {"date": "2025-11", "uv": 33193.9}, {"date": "2025-12", "uv": 35162.7}, {"date": "2026-01", "uv": 40022.6}, {"date": "2026-02", "uv": 54915.6}, {"date": "2026-03", "uv": 55299.9}, {"date": "2026-04", "uv": 65228.5}, {"date": "2026-05", "uv": 76312.8}]}, "korea_export_value": [{"date": "2020-01", "v": 3586629000}, {"date": "2020-02", "v": 3864271000}, {"date": "2020-03", "v": 4547408000}, {"date": "2020-04", "v": 3867024000}, {"date": "2020-05", "v": 4676081000}, {"date": "2020-06", "v": 4562600000}, {"date": "2020-07", "v": 4159847000}, {"date": "2020-08", "v": 4301430000}, {"date": "2020-09", "v": 4976136000}, {"date": "2020-10", "v": 4612889000}, {"date": "2020-11", "v": 4362092000}, {"date": "2020-12", "v": 4841978000}, {"date": "2021-01", "v": 4432809000}, {"date": "2021-02", "v": 4475772000}, {"date": "2021-03", "v": 5213680000}, {"date": "2021-04", "v": 4918899000}, {"date": "2021-05", "v": 5616430000}, {"date": "2021-06", "v": 6347070000}, {"date": "2021-07", "v": 5902214000}, {"date": "2021-08", "v": 6444268000}, {"date": "2021-09", "v": 6746951000}, {"date": "2021-10", "v": 5858840000}, {"date": "2021-11", "v": 6391583000}, {"date": "2021-12", "v": 6828535000}, {"date": "2022-01", "v": 5540304000}, {"date": "2022-02", "v": 5312905000}, {"date": "2022-03", "v": 6778293000}, {"date": "2022-04", "v": 5328853000}, {"date": "2022-05", "v": 6038449000}, {"date": "2022-06", "v": 6402476000}, {"date": "2022-07", "v": 5270133000}, {"date": "2022-08", "v": 4967317000}, {"date": "2022-09", "v": 5337768000}, {"date": "2022-10", "v": 3963421000}, {"date": "2022-11", "v": 3430391000}, {"date": "2022-12", "v": 3407360000}, {"date": "2023-01", "v": 2490437000}, {"date": "2023-02", "v": 2611223000}, {"date": "2023-03", "v": 3742663000}, {"date": "2023-04", "v": 2620419000}, {"date": "2023-05", "v": 3024482000}, {"date": "2023-06", "v": 4033802000}, {"date": "2023-07", "v": 3052040000}, {"date": "2023-08", "v": 3727056000}, {"date": "2023-09", "v": 4265431000}, {"date": "2023-10", "v": 3750563000}, {"date": "2023-11", "v": 4260882000}, {"date": "2023-12", "v": 5314816000}, {"date": "2024-01", "v": 4537020000}, {"date": "2024-02", "v": 5176640000}, {"date": "2024-03", "v": 5765595000}, {"date": "2024-04", "v": 4896711000}, {"date": "2024-05", "v": 5714465000}, {"date": "2024-06", "v": 7055050000}, {"date": "2024-07", "v": 5804492000}, {"date": "2024-08", "v": 6034932000}, {"date": "2024-09", "v": 6926348000}, {"date": "2024-10", "v": 6220656000}, {"date": "2024-11", "v": 6443622000}, {"date": "2024-12", "v": 7444169000}, {"date": "2025-01", "v": 4765688000}, {"date": "2025-02", "v": 4725930000}, {"date": "2025-03", "v": 6694281000}, {"date": "2025-04", "v": 5761041000}, {"date": "2025-05", "v": 7337460000}, {"date": "2025-06", "v": 8230250000}, {"date": "2025-07", "v": 7560784000}, {"date": "2025-08", "v": 8504644000}, {"date": "2025-09", "v": 9345977000}, {"date": "2025-10", "v": 8886590000}, {"date": "2025-11", "v": 10163666000}, {"date": "2025-12", "v": 12636910000}, {"date": "2026-01", "v": 12111955000}, {"date": "2026-02", "v": 15810748000}, {"date": "2026-03", "v": 20759012000}, {"date": "2026-04", "v": 20829744000}, {"date": "2026-05", "v": 24950562000}], "bls": {"asianNIC": [{"date": "2023-01", "value": 98.4}, {"date": "2023-02", "value": 98.2}, {"date": "2023-03", "value": 94.2}, {"date": "2023-04", "value": 90.9}, {"date": "2023-05", "value": 91.3}, {"date": "2023-06", "value": 91.3}, {"date": "2023-07", "value": 91.0}, {"date": "2023-08", "value": 91.2}, {"date": "2023-09", "value": 91.3}, {"date": "2023-10", "value": 91.4}, {"date": "2023-11", "value": 91.2}, {"date": "2023-12", "value": 89.8}, {"date": "2024-01", "value": 89.8}, {"date": "2024-02", "value": 90.1}, {"date": "2024-03", "value": 89.6}, {"date": "2024-04", "value": 89.3}, {"date": "2024-05", "value": 89.2}, {"date": "2024-06", "value": 89.3}, {"date": "2024-07", "value": 89.4}, {"date": "2024-08", "value": 89.7}, {"date": "2024-09", "value": 89.7}, {"date": "2024-10", "value": 90.3}, {"date": "2024-11", "value": 93.0}, {"date": "2024-12", "value": 93.1}, {"date": "2025-01", "value": 92.3}, {"date": "2025-02", "value": 92.1}, {"date": "2025-03", "value": 92.0}, {"date": "2025-04", "value": 91.3}, {"date": "2025-05", "value": 90.8}, {"date": "2025-06", "value": 89.6}, {"date": "2025-07", "value": 89.9}, {"date": "2025-08", "value": 95.1}, {"date": "2025-09", "value": 95.3}, {"date": "2025-11", "value": 96.9}, {"date": "2025-12", "value": 96.9}, {"date": "2026-01", "value": 98.1}, {"date": "2026-02", "value": 106.5}, {"date": "2026-03", "value": 108.9}, {"date": "2026-04", "value": 117.2}, {"date": "2026-05", "value": 128.4}], "ppi": [{"date": "2023-01", "value": 31.785}, {"date": "2023-06", "value": 31.594}, {"date": "2023-12", "value": 31.565}, {"date": "2024-06", "value": 31.518}, {"date": "2024-12", "value": 30.561}, {"date": "2025-06", "value": 29.882}, {"date": "2025-12", "value": 29.668}, {"date": "2026-01", "value": 29.62}, {"date": "2026-02", "value": 30.138}, {"date": "2026-03", "value": 30.132}, {"date": "2026-04", "value": 30.62}, {"date": "2026-05", "value": 30.104}]}, "mu": [{"date": "2023-11", "rev": 4.726, "gm": -0.7}, {"date": "2024-02", "rev": 5.824, "gm": 18.5}, {"date": "2024-05", "rev": 6.811, "gm": 26.9}, {"date": "2024-11", "rev": 8.709, "gm": 38.4}, {"date": "2025-02", "rev": 8.053, "gm": 36.8}, {"date": "2025-05", "rev": 9.301, "gm": 37.7}, {"date": "2025-11", "rev": 13.643, "gm": 56.0}, {"date": "2026-02", "rev": 23.86, "gm": 74.4}, {"date": "2026-05", "rev": 41.456, "gm": 84.6}], "nvda": [{"date": "2024-01", "rev": 22.103}, {"date": "2024-04", "rev": 26.044}, {"date": "2024-07", "rev": 30.04}, {"date": "2024-10", "rev": 35.082}, {"date": "2025-01", "rev": 39.331}, {"date": "2025-04", "rev": 44.062}, {"date": "2025-07", "rev": 46.743}, {"date": "2025-10", "rev": 57.006}, {"date": "2026-01", "rev": 68.127}, {"date": "2026-04", "rev": 81.615}], "regional": {"labels": ["2020", "2021", "2022", "2023", "2024", "2025", "2026E"], "Korea_export": [52.4, 69.2, 61.8, 42.9, 72.0, 94.6, 226.7], "China_import": [95.2, 121.7, 100.5, null, null, null, 222.6], "Taiwan_import": [25.5, 33.7, 31.2, null, null, null, 103.7]}, "fwd_q": ["26Q2", "26Q3", "26Q4", "27Q1", "27Q2", "27Q3", "27Q4", "28Q1", "28Q2", "28Q3", "28Q4"], "scenarios": {"DRAM": {"base": [100, 118, 132, 142, 148, 150, 148, 143, 135, 126, 118], "bull": [100, 122, 140, 156, 168, 176, 180, 182, 183, 184, 185], "bear": [100, 112, 120, 122, 120, 114, 105, 92, 80, 70, 62]}, "NAND": {"base": [100, 120, 135, 145, 150, 150, 146, 138, 128, 118, 110], "bull": [100, 124, 144, 160, 172, 180, 184, 186, 187, 188, 188], "bear": [100, 113, 122, 124, 120, 112, 100, 86, 74, 64, 56]}, "HBM": {"base": [100, 112, 122, 130, 136, 140, 142, 143, 143, 142, 140], "bull": [100, 116, 130, 142, 152, 160, 166, 170, 173, 175, 176], "bear": [100, 108, 115, 118, 118, 116, 112, 106, 100, 94, 88]}}, "kpi": {"DRAM": {"latest_uv": 77557.0, "latest_date": "2026-05", "yoy_pct": 453.2, "trough_uv": 7376.2, "trough_date": "2022-12", "x_from_trough": 10.5}, "NAND": {"latest_uv": 56748.1, "latest_date": "2026-05", "yoy_pct": 326.3, "trough_uv": 6287.1, "trough_date": "2025-02", "x_from_trough": 9.0}, "HBM": {"latest_uv": 107493.4, "latest_date": "2026-05", "yoy_pct": 197.1, "trough_uv": 10351.8, "trough_date": "2023-04", "x_from_trough": 10.4}, "TOTAL": {"latest_uv": 76312.8, "latest_date": "2026-05", "yoy_pct": 255.0, "trough_uv": 9486.7, "trough_date": "2023-04", "x_from_trough": 8.0}}}}</script>
+<script>
+const RAW = JSON.parse(document.getElementById('factiq-data').textContent);
+const D = RAW.d || RAW;
+const C = {dram:'#f4b53f',nand:'#33c9d6',hbm:'#b678f0',total:'#7c89ab',up:'#43e08a',down:'#ff5f7e',nvda:'#77b900',mut:'#8a97b6',line:'#1d2841'};
+const fmt = n => n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : n;
+const axis = {axisLine:{lineStyle:{color:'#2a3654'}},axisLabel:{color:'#8090b0',fontSize:11},splitLine:{lineStyle:{color:'rgba(40,52,84,.5)'}}};
+function tip(extra){return Object.assign({trigger:'axis',backgroundColor:'#0d1424',borderColor:'#26324f',textStyle:{color:'#e8edf9',fontSize:12},confine:true},extra||{})}
+
+document.getElementById('asof').textContent = D.meta.as_of;
+
+/* ---------- verdict + kpis ---------- */
+const k = D.kpi;
+document.getElementById('verdict').innerHTML =
+ `<b>Bottom line —</b> Memory pricing is in a historic AI-driven upcycle: as of May-2026, DRAM export unit values are <b class="mono">+${k.DRAM.yoy_pct}% YoY</b> and <b class="mono">${k.DRAM.x_from_trough}×</b> their late-2022 trough, with NAND (the laggard) and HBM both up ~9–10×. Company guidance points to shortages <b>widening into 2027</b>; the pivotal question is whether 2028 fab capacity triggers a soft landing or an oversupply correction.`;
+
+const kpiDefs=[
+ {c:'dram',lbl:'DRAM',s:k.DRAM},{c:'nand',lbl:'NAND (flash)',s:k.NAND},{c:'hbm',lbl:'HBM / multichip',s:k.HBM},
+];
+let kh='';
+kpiDefs.forEach(d=>{
+ kh+=`<div class="kpi ${d.c}"><div class="lbl">${d.lbl} · unit value</div>
+   <div class="big mono">$${(d.s.latest_uv/1000).toFixed(1)}k<span class="unit"> /kg</span></div>
+   <div class="row"><span class="up">▲ ${d.s.yoy_pct}% YoY</span><span>${d.s.x_from_trough}× off trough</span></div></div>`;
+});
+const muLast=D.mu[D.mu.length-1];
+kh+=`<div class="kpi mu"><div class="lbl">Micron gross margin</div>
+   <div class="big mono">${muLast.gm}%<span class="unit"> Q ${muLast.date}</span></div>
+   <div class="row"><span class="up">▲ from −0.7%</span><span>rev $${muLast.rev.toFixed(0)}B/q</span></div></div>`;
+document.getElementById('kpis').innerHTML=kh;
+
+function legend(el,items){document.getElementById(el).innerHTML=items.map(i=>`<span class="k"><span class="sw" style="background:${i.c}"></span>${i.n}</span>`).join('')}
+
+/* ---------- 1. history log ---------- */
+legend('leg1',[{n:'DRAM',c:C.dram},{n:'NAND',c:C.nand},{n:'HBM / multichip',c:C.hbm},{n:'All memory',c:C.total}]);
+(function(){
+ const s=D.korea_uv, dates=s.DRAM.map(p=>p.date);
+ const mk=(arr,col,w)=>({type:'line',name:'',data:arr.map(p=>p.uv),showSymbol:false,lineWidth:w||2.2,
+   lineStyle:{color:col,width:w||2.2},itemStyle:{color:col},emphasis:{focus:'series'}});
+ echarts.init(document.getElementById('c_hist'),null,{renderer:'canvas'}).setOption({
+  tooltip:tip({valueFormatter:v=>'$'+Math.round(v).toLocaleString()+'/kg',
+    axisPointer:{type:'line',lineStyle:{color:'#3a4a6e'}}}),
+  grid:{left:58,right:16,top:14,bottom:52},
+  xAxis:{type:'category',data:dates,boundaryGap:false,...axis,
+    axisLabel:{color:'#8090b0',fontSize:11,formatter:(v)=>v.endsWith('-01')?v.slice(0,4):'',interval:0}},
+  yAxis:{type:'log',...axis,axisLabel:{color:'#8090b0',fontSize:11,formatter:v=>'$'+fmt(v)}},
+  series:[
+   Object.assign(mk(s.HBM,C.hbm),{name:'HBM'}),
+   Object.assign(mk(s.DRAM,C.dram),{name:'DRAM'}),
+   Object.assign(mk(s.TOTAL,C.total,1.4),{name:'All memory',lineStyle:{color:C.total,width:1.4,type:'dashed'}}),
+   Object.assign(mk(s.NAND,C.nand),{name:'NAND'}),
+  ],
+  markLine:{silent:true}
+ });
+})();
+
+/* ---------- 2. scenario cones ---------- */
+function cone(el,seg,col){
+ const q=D.fwd_q, sc=D.scenarios[seg];
+ const band=sc.bull.map((v,i)=>v-sc.bear[i]);
+ echarts.init(document.getElementById(el),null,{renderer:'canvas'}).setOption({
+  tooltip:tip({formatter:function(ps){
+     const i=ps[0].dataIndex;return `<b>${q[i]}</b><br/>Bull ${sc.bull[i]} · <b>Base ${sc.base[i]}</b> · Bear ${sc.bear[i]}`;}}),
+  grid:{left:34,right:12,top:26,bottom:24},
+  xAxis:{type:'category',data:q,boundaryGap:false,...axis,
+    axisLabel:{color:'#7d8bad',fontSize:10,formatter:v=>v.endsWith('Q1')||v==='26Q2'?"'"+v.slice(0,2):'',interval:0}},
+  yAxis:{type:'value',min:40,max:200,...axis,axisLabel:{color:'#7d8bad',fontSize:10}},
+  series:[
+   {type:'line',data:sc.bear,stack:'b',showSymbol:false,lineStyle:{opacity:0},z:1},
+   {type:'line',data:band,stack:'b',showSymbol:false,lineStyle:{opacity:0},areaStyle:{color:col,opacity:.14},z:1},
+   {type:'line',name:'bull',data:sc.bull,showSymbol:false,lineStyle:{color:col,width:1,type:'dashed',opacity:.55}},
+   {type:'line',name:'bear',data:sc.bear,showSymbol:false,lineStyle:{color:col,width:1,type:'dashed',opacity:.55}},
+   {type:'line',name:'base',data:sc.base,showSymbol:false,lineStyle:{color:col,width:3},
+     markLine:{silent:true,symbol:'none',lineStyle:{color:'#41507a',type:'dotted'},
+       data:[{yAxis:100,label:{formatter:'today',color:'#6d7ba0',fontSize:9,position:'insideStartTop'}}]}},
+  ]
+ });
+}
+cone('c_dram','DRAM',C.dram);cone('c_nand','NAND',C.nand);cone('c_hbm','HBM',C.hbm);
+
+/* ---------- 3. demand ---------- */
+legend('leg3',[{n:'Nvidia rev ($B)',c:C.nvda},{n:'Micron rev ($B)',c:C.dram},{n:'Micron gross margin %',c:C.up}]);
+(function(){
+ const nv=D.nvda, mu=D.mu;
+ // align on union of dates for x axis (quarterly)
+ const dates=[...new Set([...nv.map(d=>d.date),...mu.map(d=>d.date)])].sort();
+ const g=(arr,key)=>dates.map(dt=>{const f=arr.find(x=>x.date===dt);return f?f[key]:null;});
+ echarts.init(document.getElementById('c_dem'),null,{renderer:'canvas'}).setOption({
+  tooltip:tip({}),
+  grid:{left:44,right:44,top:14,bottom:26},
+  legend:{show:false},
+  xAxis:{type:'category',data:dates,...axis,axisLabel:{color:'#8090b0',fontSize:10,formatter:v=>v}},
+  yAxis:[{type:'value',...axis,name:'US$ B',nameTextStyle:{color:'#6d7ba0',fontSize:10},axisLabel:{color:'#8090b0',fontSize:11}},
+        {type:'value',max:100,min:-10,...axis,name:'GM %',position:'right',nameTextStyle:{color:'#6d7ba0',fontSize:10},axisLabel:{color:'#8090b0',fontSize:11,formatter:'{value}%'},splitLine:{show:false}}],
+  series:[
+   {type:'bar',name:'Nvidia rev',data:g(nv,'rev'),itemStyle:{color:C.nvda,opacity:.85,borderRadius:[3,3,0,0]},barGap:'-100%',barWidth:'46%'},
+   {type:'bar',name:'Micron rev',data:g(mu,'rev'),itemStyle:{color:C.dram,borderRadius:[3,3,0,0]},barWidth:'46%'},
+   {type:'line',name:'Micron GM',yAxisIndex:1,data:g(mu,'gm'),showSymbol:true,symbolSize:6,lineStyle:{color:C.up,width:2.4},itemStyle:{color:C.up}},
+  ]
+ });
+})();
+
+/* ---------- 4. BLS ---------- */
+legend('leg4',[{n:'Import price · Asian NICs',c:C.dram},{n:'Domestic PPI · semiconductors',c:C.total}]);
+(function(){
+ const a=D.bls.asianNIC, p=D.bls.ppi;
+ const dates=[...new Set([...a.map(d=>d.date),...p.map(d=>d.date)])].sort();
+ const g=arr=>dates.map(dt=>{const f=arr.find(x=>x.date===dt);return f?f.value:null;});
+ echarts.init(document.getElementById('c_bls'),null,{renderer:'canvas'}).setOption({
+  tooltip:tip({}),
+  grid:{left:46,right:46,top:14,bottom:26},
+  xAxis:{type:'category',data:dates,boundaryGap:false,...axis,axisLabel:{color:'#8090b0',fontSize:10,formatter:v=>v.endsWith('-01')||v.endsWith('-07')?v.slice(2):'' ,interval:0}},
+  yAxis:[{type:'value',...axis,name:'index',nameTextStyle:{color:'#6d7ba0',fontSize:10},axisLabel:{color:'#8090b0',fontSize:11}},
+         {type:'value',...axis,position:'right',splitLine:{show:false},axisLabel:{color:'#7c89ab',fontSize:11}}],
+  series:[
+   {type:'line',name:'Asian NIC import price',data:g(a),showSymbol:false,connectNulls:true,lineStyle:{color:C.dram,width:2.6},itemStyle:{color:C.dram},areaStyle:{color:'rgba(244,181,63,.10)'}},
+   {type:'line',name:'Domestic PPI',yAxisIndex:1,data:g(p),showSymbol:false,connectNulls:true,lineStyle:{color:C.total,width:1.8,type:'dashed'},itemStyle:{color:C.total}},
+  ]
+ });
+})();
+
+/* ---------- 5. revenue barometer ---------- */
+(function(){
+ const r=D.korea_export_value;
+ echarts.init(document.getElementById('c_rev'),null,{renderer:'canvas'}).setOption({
+  tooltip:tip({valueFormatter:v=>'$'+(v/1e9).toFixed(1)+'B'}),
+  grid:{left:52,right:16,top:14,bottom:30},
+  xAxis:{type:'category',data:r.map(p=>p.date),boundaryGap:false,...axis,axisLabel:{color:'#8090b0',fontSize:10,formatter:v=>v.endsWith('-01')?v.slice(0,4):'',interval:0}},
+  yAxis:{type:'value',...axis,axisLabel:{color:'#8090b0',fontSize:11,formatter:v=>'$'+(v/1e9).toFixed(0)+'B'}},
+  series:[{type:'line',data:r.map(p=>p.v),showSymbol:false,lineStyle:{color:C.hbm,width:2.4},itemStyle:{color:C.hbm},
+    areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(182,120,240,.35)'},{offset:1,color:'rgba(182,120,240,.02)'}])}}]
+ });
+})();
+
+/* ---------- outlook ---------- */
+const outlook=[
+ {c:'dram',tag:'DRAM',dir:'▲ Higher for longer',dirc:C.up,
+  h:'Rising into 2027, cycle risk in 2028',
+  p:'The core of the shortage. Contract prices reported up strongly QoQ through 2026; suppliers keep capacity disciplined and customers are pre-booking 2027 volume. Base case: elevated plateau into 2027, gentle easing late-2028 as new fabs ramp.',
+  swing:'Swing factor: pace of new wafer capacity vs AI demand'},
+ {c:'nand',tag:'NAND',dir:'▲ Catching up',dirc:C.up,
+  h:'Laggard turned leader — most cyclical',
+  p:'Bottomed latest (Feb-2025) but by 2026 NAND price growth is outpacing DRAM as supply reallocates to enterprise SSD. Structurally more cyclical: the deepest downside if 2028 capacity overshoots demand.',
+  swing:'Swing factor: enterprise-SSD demand & supplier restraint'},
+ {c:'hbm',tag:'HBM',dir:'▲ Tightest, best-supported',dirc:C.up,
+  h:'Sold out into 2027; premium compressing',
+  p:'Structurally the strongest: allocation sold out with multi-year visibility, HBM4E ramping to volume in 2027. Its price premium over commodity DRAM is narrowing — because conventional DRAM is tightening just as much, not because HBM is weakening.',
+  swing:'Swing factor: AI accelerator build-out (Nvidia et al.)'},
+];
+document.getElementById('outlook').innerHTML=outlook.map(o=>`
+ <div class="oc ${o.c}"><span class="tag">${o.tag}</span>
+  <h4>${o.h}</h4><p>${o.p}</p>
+  <div class="verdict-tag" style="color:${o.dirc}">${o.dir}</div>
+  <div style="margin-top:8px"><span class="pill">${o.swing}</span></div></div>`).join('');
+
+document.getElementById('srcbar').innerHTML=['Korea Customs (KCS)','US BLS','SEC EDGAR · MU / NVDA','China GACC','Taiwan MOEA','Earnings coverage']
+ .map(s=>`<span class="src">${s}</span>`).join('');
+</script>
+</body>
+</html>
