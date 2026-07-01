@@ -2,6 +2,8 @@
 
 An interactive dashboard tracking the AI-driven memory pricing super-cycle and mapping three trajectories through 2028.
 
+> **v2 — corrected for bit density.** A per-kilogram price proxy conflates the real price-per-bit with rising chip density (more bits per kg every year) and product mix. Using Korea customs value **and** weight, the dashboard decomposes the ~10× rise in $/kg into a density component and the residual real price-per-bit: DRAM real price is up **~6×** off its trough (not 10×), while NAND and HBM are, in real per-bit terms, only back near their **2020 levels**. Density assumptions (DRAM +17%/yr, NAND +28%/yr, HBM +12%/yr bits-per-kg) are stated in every panel and the methodology box.
+
 **Live page:** https://rishsriv.github.io/memory-supercycle-2028/
 
 ![preview](preview.png)
